@@ -95,7 +95,7 @@ MIT License
 
 ## 👨‍💻 Author
 
-**Nama Kamu**
+**Samuel Panjaitan**
 - GitHub: [@SamuelPanjaitan-stack](https://github.com/SamuelPanjaitan-stack)
 - Email: samuelpanjaitan16@gmail.com
 
