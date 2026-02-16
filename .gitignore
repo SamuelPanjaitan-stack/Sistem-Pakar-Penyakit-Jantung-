@@ -1,0 +1,17 @@
+# File konfigurasi sensitif
+config.php
+db.php
+
+# Folder yang tidak perlu diupload
+node_modules/
+vendor/
+
+# File sistem
+.DS_Store
+Thumbs.db
+*.log
+
+# File backup
+*.bak
+*.tmp
+*~
