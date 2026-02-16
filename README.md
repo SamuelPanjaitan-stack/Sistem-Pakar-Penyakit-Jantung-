@@ -96,8 +96,8 @@ MIT License
 ## 👨‍💻 Author
 
 **Nama Kamu**
-- GitHub: [@username](https://github.com/username)
-- Email: email@kamu.com
+- GitHub: [](https://github.com/SamuelPanjaitan-stack)
+- Email: samuelpanjaitan16@gmail.com
 
 ---
 
