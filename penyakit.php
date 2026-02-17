@@ -4,27 +4,43 @@ include 'config.php';
 
 // Handle form submissions
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    if (isset($_POST['add'])) {
+    if ($_POST['action'] === 'add') {
+        // FIXED: Pakai prepared statement
         $kode = $_POST['kode'];
         $nama = $_POST['nama'];
-        $sql = "INSERT INTO penyakit (kode, nama) VALUES ('$kode', '$nama')";
-        mysqli_query($conn, $sql);
-    } elseif (isset($_POST['update'])) {
-        $id = $_POST['id'];
+
+        $stmt = $conn->prepare("INSERT INTO penyakit (kode, nama) VALUES (?, ?)");
+        $stmt->bind_param("ss", $kode, $nama);
+        $stmt->execute();
+        $stmt->close();
+        header('Location: penyakit.php'); exit; // ← UPDATE Redirect
+
+    } elseif ($_POST['action'] === 'update') {
+        // FIXED: Pakai prepared statement + hapus duplikat query
+        $id   = intval($_POST['id']);
         $kode = $_POST['kode'];
         $nama = $_POST['nama'];
-        $sql = "UPDATE penyakit SET kode='$kode', nama='$nama' WHERE id=$id";
-        mysqli_query($conn, $sql);
-        $query = "UPDATE penyakit SET kode = '$kode', nama = '$nama' WHERE id = '$id'";
+
+        $stmt = $conn->prepare("UPDATE penyakit SET kode = ?, nama = ? WHERE id = ?");
+        $stmt->bind_param("ssi", $kode, $nama, $id);
+        $stmt->execute();
+        $stmt->close();
+        header('Location: penyakit.php'); exit; // ← UPDATE Redirect
+
     } elseif (isset($_POST['delete'])) {
-        $id = $_POST['id'];
-        $sql = "DELETE FROM penyakit WHERE id=$id";
-        mysqli_query($conn, $sql);
+        // FIXED: Pakai prepared statement
+        $id = intval($_POST['id']);
+
+        $stmt = $conn->prepare("DELETE FROM penyakit WHERE id = ?");
+        $stmt->bind_param("i", $id);
+        $stmt->execute();
+        $stmt->close();
+        header('Location: penyakit.php'); exit; // ← UPDATE Redirect
     }
 }
 
-// Fetch data for display
-$penyakit = mysqli_query($conn, "SELECT * FROM penyakit");
+// FIXED: Ganti ke object-oriented
+$penyakit = $conn->query("SELECT * FROM penyakit");
 ?>
 
 <!DOCTYPE html>
@@ -221,8 +237,10 @@ $penyakit = mysqli_query($conn, "SELECT * FROM penyakit");
                                     </div>
                                     <div class="modal-footer">
                                         <button type="button" class="btn btn-danger" data-bs-dismiss="modal">Batal</button>
-                                        <button type="submit" name="add" class="btn btn-primary" id="addButton">Tambah Data</button>
-                                        <button type="submit" name="update" class="btn btn-primary" id="updateButton">Update Data</button>
+                                        <button type="submit" name="action" value="add" 
+                                        class="btn btn-primary" id="submitButton">
+                                        Tambah Data
+                                        </button>
                                     </div>
                                 </form>
                             </div>
@@ -264,7 +282,7 @@ $penyakit = mysqli_query($conn, "SELECT * FROM penyakit");
                             </tr>
                         </thead>
                         <tbody>
-                            <?php while ($row = mysqli_fetch_assoc($penyakit)) : ?>
+                            <?php while ($row = $penyakit->fetch_assoc()) : ?>
                                 <tr>
                                     <td><?php echo $row['kode']; ?></td>
                                     <td><?php echo $row['nama']; ?></td>
@@ -288,17 +306,21 @@ $penyakit = mysqli_query($conn, "SELECT * FROM penyakit");
             document.getElementById('id').value = '';
             document.getElementById('kode').value = '';
             document.getElementById('nama').value = '';
-            document.querySelector('#addButton').style.display = 'inline-block';
-            document.querySelector('#updateButton').style.display = 'none';
-        }
+
+            const btn = document.getElementById('submitButton');
+            btn.value = "add";
+            btn.textContent = "Tambah Data";
+}
 
         function editPenyakit(id, kode, nama) {
             document.getElementById('id').value = id;
             document.getElementById('kode').value = kode;
             document.getElementById('nama').value = nama;
-            document.querySelector('#addButton').style.display = 'none';
-            document.querySelector('#updateButton').style.display = 'inline-block';
-        }
+
+            const btn = document.getElementById('submitButton');
+            btn.value = "update";
+            btn.textContent = "Update Data";
+}
 
         function confirmDelete(id) {
             document.getElementById('delete-id').value = id;

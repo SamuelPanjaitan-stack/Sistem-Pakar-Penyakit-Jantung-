@@ -6,11 +6,26 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $username = $_POST['username'];
     $password = $_POST['password'];
 
-    $query = "SELECT * FROM admin WHERE username='$username' AND password='$password'";
-    $result = mysqli_query($conn, $query);
-    $admin = mysqli_fetch_assoc($result);
+    // Cari user berdasarkan username saja dulu
+    $stmt = $conn->prepare("SELECT * FROM admin WHERE username = ?");
+    $stmt->bind_param("s", $username);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $admin = $result->fetch_assoc();
+    $stmt->close();
 
-    if ($admin) {
+//     // DEBUG SEMENTARA - hapus setelah login berhasil
+// echo "Admin ditemukan: ";
+// var_dump($admin);
+
+// if ($admin) {
+//     echo "Password verify result: ";
+//     var_dump(password_verify($password, $admin['password']));
+// }
+// die(); // Stop di sini dulu
+
+    // Cek password dengan password_verify()
+    if ($admin && password_verify($password, $admin['password'])) {
         $_SESSION['admin_id'] = $admin['id'];
         header('Location: penyakit.php');
         exit;

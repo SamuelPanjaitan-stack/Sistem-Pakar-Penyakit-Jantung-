@@ -3,28 +3,45 @@ include 'config.php';
 
 // Handle form submissions
 $diagnosis = null;
+$error = null;
+
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    $selected_gejala = $_POST['gejala'];
-    $gejala_count = count($selected_gejala);
-
-    if ($gejala_count >= 3) {
-        $selected_gejala_ids = implode(",", $selected_gejala);
-
-        // Query yang sudah diperbaiki - JOIN solusi dari penyakit
-        $query = "SELECT penyakit.nama AS penyakit_nama, solusi.nama AS solusi_nama
-                  FROM aturan 
-                  JOIN penyakit ON aturan.penyakit_id = penyakit.id 
-                  LEFT JOIN solusi ON penyakit.solusi_id = solusi.id
-                  WHERE aturan.gejala_id IN ($selected_gejala_ids) 
-                  GROUP BY penyakit.id 
-                  HAVING COUNT(DISTINCT aturan.gejala_id) = $gejala_count";
-        $result = mysqli_query($conn, $query);
-        $diagnosis = mysqli_fetch_assoc($result);
+    
+    // Masalah 1 FIXED: Validasi input dulu
+    if (!isset($_POST['gejala']) || empty($_POST['gejala'])) {
+        $error = "Silahkan pilih minimal 3 gejala!";
     } else {
-        $diagnosis = null;
+        $selected_gejala = $_POST['gejala'];
+        $gejala_count = count($selected_gejala);
+
+        if ($gejala_count < 3) {
+            $error = "Silahkan pilih minimal 3 gejala!";
+        } else {
+            // Masalah 2 FIXED: Sanitasi semua ID jadi integer
+            $selected_gejala = array_map('intval', $selected_gejala);
+            $selected_gejala_ids = implode(",", $selected_gejala);
+
+            // Masalah 3 FIXED: Pakai prepared statement
+            $query = "SELECT penyakit.nama AS penyakit_nama, solusi.nama AS solusi_nama
+                      FROM aturan 
+                      JOIN penyakit ON aturan.penyakit_id = penyakit.id 
+                      LEFT JOIN solusi ON penyakit.solusi_id = solusi.id
+                      WHERE aturan.gejala_id IN ($selected_gejala_ids) 
+                      GROUP BY penyakit.id 
+                      HAVING COUNT(DISTINCT aturan.gejala_id) = ?";
+
+            $stmt = $conn->prepare($query);
+            $stmt->bind_param("i", $gejala_count);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            $diagnosis = $result->fetch_assoc();
+            $stmt->close();
+        }
     }
 }
-$gejala = mysqli_query($conn, "SELECT * FROM gejala");
+
+// Masalah 3 FIXED: Ganti mysqli procedural ke object-oriented
+$gejala = $conn->query("SELECT * FROM gejala");
 ?>
 
 <!DOCTYPE html>
@@ -93,6 +110,11 @@ $gejala = mysqli_query($conn, "SELECT * FROM gejala");
                     </div>
                     <div class="card-body">
                         <p>Silahkan Pilih Gejala yang Anda Rasakan</p>
+                        <?php if ($error) : ?>
+    <div class="alert alert-warning">
+        <?php echo $error; ?>
+    </div>
+<?php endif; ?>
                         <form method="POST" action="konsultasi.php">
                             <div class="mb-3">
                                 <?php while ($row = mysqli_fetch_assoc($gejala)) : ?>
