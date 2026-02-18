@@ -5,25 +5,46 @@ include 'config.php';
 // Handle form submissions
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     if (isset($_POST['add'])) {
-        $penyakit_id = $_POST['penyakit_id'];
-        $gejala_id = $_POST['gejala_id'];
-        $sql = "INSERT INTO aturan (penyakit_id, gejala_id) VALUES ('$penyakit_id', '$gejala_id')";
-        mysqli_query($conn, $sql);
+        // FIXED: Pakai prepared statement + sanitasi ID
+        $penyakit_id = intval($_POST['penyakit_id']);
+        $gejala_id = intval($_POST['gejala_id']);
+
+        $stmt = $conn->prepare("INSERT INTO aturan (penyakit_id, gejala_id) VALUES (?, ?)");
+        $stmt->bind_param("ii", $penyakit_id, $gejala_id);
+        $stmt->execute();
+
+        // // DEBUG SEMENTARA
+        // if ($stmt->error) {
+        //     echo "Error: " . $stmt->error;
+        //     die();
+        // }
+        // echo "Penyakit ID: " . $penyakit_id . "<br>";
+        // echo "Gejala ID: " . $gejala_id . "<br>";
+        // echo "Rows affected: " . $stmt->affected_rows;
+        // die(); // Stop di sini dulu
+        $stmt->close();
+        header('Location: aturan.php'); exit;
+
     } elseif (isset($_POST['delete'])) {
-        $id = $_POST['id'];
-        $sql = "DELETE FROM aturan WHERE id=$id";
-        mysqli_query($conn, $sql);
+        // FIXED: Pakai prepared statement + sanitasi ID
+        $id = intval($_POST['id']);
+
+        $stmt = $conn->prepare("DELETE FROM aturan WHERE id = ?");
+        $stmt->bind_param("i", $id);
+        $stmt->execute();
+        $stmt->close();
+        header('Location: aturan.php'); exit;
     }
 }
+// fetch data
+// FIXED: Ganti ke object-oriented
+$aturan = $conn->query("SELECT aturan.id, penyakit.nama as penyakit, gejala.nama as gejala
+                        FROM aturan
+                        JOIN penyakit ON aturan.penyakit_id = penyakit.id
+                        JOIN gejala ON aturan.gejala_id = gejala.id");
 
-// Fetch data for display
-$aturan = mysqli_query($conn, "SELECT aturan.id, penyakit.nama as penyakit, gejala.nama as gejala
-                                FROM aturan
-                                JOIN penyakit ON aturan.penyakit_id = penyakit.id
-                                JOIN gejala ON aturan.gejala_id = gejala.id");
-
-$penyakit = mysqli_query($conn, "SELECT * FROM penyakit");
-$gejala = mysqli_query($conn, "SELECT * FROM gejala");
+$penyakit = $conn->query("SELECT * FROM penyakit");
+$gejala = $conn->query("SELECT * FROM gejala");
 ?>
 
 <!DOCTYPE html>
@@ -271,7 +292,7 @@ $gejala = mysqli_query($conn, "SELECT * FROM gejala");
                         </thead>
                         <tbody>
                             <?php $no = 1; ?>
-                            <?php while ($row = mysqli_fetch_assoc($aturan)) : ?>
+                            <?php while ($row = $aturan->fetch_assoc()) : ?>
                                 <tr>
                                     <td><?php echo $no++; ?></td>
                                     <td><?php echo $row['penyakit']; ?></td>
