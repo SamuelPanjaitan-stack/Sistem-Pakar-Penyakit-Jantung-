@@ -8,8 +8,8 @@ Sistem pakar untuk mendiagnosis penyakit jantung menggunakan metode **Forward Ch
 
 Project ini sedang dalam tahap pengembangan aktif. Beberapa fitur masih dalam proses perbaikan:
 
-- [ ] Security hardening (SQL injection prevention)
-- [ ] Password hashing implementation
+- [ ✅] Security hardening (SQL injection prevention)
+- [ ✅] Password hashing implementation
 - [ ] Algorithm optimization
 - [ ] Comprehensive testing
 
